@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Task Manager</title>
+    <style>
+                body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f6f8;
+            margin: 0;
+            padding: 2rem;
+            color: #333;
+        }
+
+        .container {
+            max-width: 700px;
+            margin: auto;
+            background-color: white;
+            padding: 2rem;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+        }
+
+        h2 {
+            margin-bottom: 1.5rem;
+            color: #2c3e50;
+        }
+
+        form {
+            display: grid;
+            gap: 1rem;
+        }
+
+        label {
+            font-weight: 500;
+            margin-bottom: 0.25rem;
+        }
+
+        input, textarea {
+            width: 100%;
+            padding: 0.75rem;
+            font-size: 1rem;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+        }
+
+        button {
+            background-color: #007bff;
+            color: white;
+            padding: 0.75rem;
+            font-size: 1rem;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.2s ease;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        ul {
+            margin-top: 2rem;
+            padding: 0;
+            list-style: none;
+        }
+
+        li {
+            background: #fafafa;
+            padding: 1rem;
+            border-left: 5px solid #007bff;
+            margin-bottom: 1rem;
+            border-radius: 5px;
+        }
+
+        li strong {
+            font-size: 1.1rem;
+            color: #222;
+        }
+
+        .task-meta {
+            font-size: 0.95rem;
+            color: #555;
+            margin-top: 0.5rem;
+        }
+    </style>
+</head>
+
+</head>
+<body>
+    <h1>📋 Task List</h1>
+
+    <!-- 📝 Task Form -->
+    <form action="/add-task" method="post">
+        <label>ID: <input type="number" name="t_id" required></label><br>
+        <label>Name: <input type="text" name="t_name" required></label><br>
+        <label>Description: <input type="text" name="t_description" required></label><br>
+        <label>Deadline: <input type="date" name="t_deadline" required></label><br>
+        <label>Duration (mins): <input type="number" name="t_duration" required></label><br>
+        <button type="submit">Add Task</button>
+    </form>
+
+    <hr>
+
+    <!-- ✅ Task List -->
+    <ul>
+        {% for task in tasks %}
+        <li>
+            <strong>{{ task.t_name }}</strong><br>
+            Description: {{ task.t_description }}<br>
+            Priority: {{ task.t_priority }}<br>
+            Deadline: {{ task.t_deadline }}<br>
+            Duration: {{ task.t_duration }} mins
+        </li>
+        <hr>
+        <a href="/dependency-graph">
+    <button style="padding: 8px 16px; background-color: #007BFF; color: white; border: none; border-radius: 4px; cursor: pointer;">
+        View Task Dependency Graph
+    </button>
+</a>
+        {% endfor %}
+    </ul>
+</body>
+</html>
