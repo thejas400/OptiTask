@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Interactive Task Dependency Graph</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.23.0/cytoscape.min.js"></script>
+  <style>
+    body {
+      margin: 0;
+      font-family: sans-serif;
+      background: #f4f4f4;
+    }
+
+    #cy {
+      height: 100vh;
+      width: 100%;
+      display: block;
+    }
+
+    h2 {
+      text-align: center;
+      color: #00bcd4;
+      padding: 1rem;
+    }
+  </style>
+</head>
+<body>
+
+  <h2>Task Dependency Graph</h2>
+  <div id="cy"></div>
+
+  <script>
+    fetch("/graph-data")
+      .then(res => res.json())
+      .then(data => {
+        cytoscape({
+          container: document.getElementById("cy"),
+          elements: data.elements,
+          layout: {
+            name: 'breadthfirst',
+            directed: true,
+            padding: 10
+          },
+          style: [
+            {
+              selector: 'node',
+              style: {
+                'label': 'data(label)',
+                'text-valign': 'center',
+                'color': '#fff',
+                'text-outline-color': '#007bff',
+                'text-outline-width': 2,
+                'background-color': ele => {
+                  let status = ele.data('status');
+                  let priority = ele.data('priority');
+                  if (status === 'done') return '#4caf50'; // green
+                  if (priority == 1) return '#1976d2';       // blue
+                  if (priority == 2) return '#ff9800';       // orange
+                  return '#9e9e9e';                          // gray
+                }
+              }
+            },
+            {
+              selector: 'edge',
+              style: {
+                'width': 2,
+                'line-color': '#aaa',
+                'target-arrow-color': '#aaa',
+                'target-arrow-shape': 'triangle',
+                'curve-style': 'bezier'
+              }
+            }
+          ]
+        });
+      });
+  </script>
+</body>
+</html>

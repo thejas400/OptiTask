@@ -1,126 +1,138 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Task Manager</title>
+    <meta charset="UTF-8" />
+    <title>OptiTask - NLP Task Manager</title>
     <style>
-                body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #f4f6f8;
-            margin: 0;
-            padding: 2rem;
-            color: #333;
+        body { font-family: Arial, sans-serif; background: #f5f5f5; padding: 20px; }
+        .container { background: white; padding: 20px; border-radius: 8px; max-width: 800px; margin: auto; }
+        h1 { color: #0077cc; }
+        input, textarea { width: 100%; padding: 10px; margin-top: 10px; margin-bottom: 10px; }
+        button { padding: 10px 15px; background: #0077cc; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        .progress { height: 20px; background: #ccc; border-radius: 10px; overflow: hidden; margin: 20px 0; }
+        .progress-bar { 
+            height: 100%; 
+            background: #00c853; 
+            width: 0; /* start at zero for animation */
+            transition: width 1s ease; 
         }
-
-        .container {
-            max-width: 700px;
-            margin: auto;
-            background-color: white;
-            padding: 2rem;
-            border-radius: 10px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
-        }
-
-        h2 {
-            margin-bottom: 1.5rem;
-            color: #2c3e50;
-        }
-
-        form {
-            display: grid;
-            gap: 1rem;
-        }
-
-        label {
-            font-weight: 500;
-            margin-bottom: 0.25rem;
-        }
-
-        input, textarea {
-            width: 100%;
-            padding: 0.75rem;
-            font-size: 1rem;
-            border: 1px solid #ccc;
-            border-radius: 6px;
-        }
-
-        button {
-            background-color: #007bff;
-            color: white;
-            padding: 0.75rem;
-            font-size: 1rem;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            transition: background 0.2s ease;
-        }
-
-        button:hover {
-            background-color: #0056b3;
-        }
-
-        ul {
-            margin-top: 2rem;
-            padding: 0;
-            list-style: none;
-        }
-
-        li {
-            background: #fafafa;
-            padding: 1rem;
-            border-left: 5px solid #007bff;
-            margin-bottom: 1rem;
-            border-radius: 5px;
-        }
-
-        li strong {
-            font-size: 1.1rem;
-            color: #222;
-        }
-
-        .task-meta {
-            font-size: 0.95rem;
-            color: #555;
-            margin-top: 0.5rem;
-        }
+        .task { background: #f0f0f0; padding: 15px; margin-bottom: 10px; border-left: 5px solid #0077cc; border-radius: 6px; }
+        .btn-group form { display: inline-block; margin-top: 10px; }
+        .completed { color: green; font-weight: bold; }
+        #loader { position: fixed; background: white; top: 0; left: 0; right: 0; bottom: 0; display: flex; align-items: center; justify-content: center; z-index: 9999; }
+        .spinner { width: 60px; height: 60px; border: 6px solid #ccc; border-top: 6px solid #0077cc; border-radius: 50%; animation: spin 1s linear infinite; }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
     </style>
-</head>
-
+    <!-- Cytoscape.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.23.0/cytoscape.min.js"></script>
 </head>
 <body>
-    <h1>📋 Task List</h1>
+    <div id="loader"><div class="spinner"></div></div>
 
-    <!-- 📝 Task Form -->
-    <form action="/add-task" method="post">
-        <label>ID: <input type="number" name="t_id" required></label><br>
-        <label>Name: <input type="text" name="t_name" required></label><br>
-        <label>Description: <input type="text" name="t_description" required></label><br>
-        <label>Deadline: <input type="date" name="t_deadline" required></label><br>
-        <label>Duration (mins): <input type="number" name="t_duration" required></label><br>
-        <button type="submit">Add Task</button>
-    </form>
+    <div class="container" style="display:none;">
+        <h1>OptiTask 🧠</h1>
 
-    <hr>
+        <form method="post" action="/create-task">
+            <textarea name="text" rows="3" placeholder="e.g. Call client at 3pm tomorrow for 30 minutes"></textarea>
+            <button type="submit">Add Task</button>
+        </form>
 
-    <!-- ✅ Task List -->
-    <ul>
+        {% if missing_info %}
+            <p style="color:red;">⚠️ Missing {{ missing_info }} in: "{{ original_text }}"</p>
+        {% endif %}
+
+        <div class="progress">
+            <div class="progress-bar"></div> <!-- removed inline width -->
+        </div>
+
         {% for task in tasks %}
-        <li>
-            <strong>{{ task.t_name }}</strong><br>
-            Description: {{ task.t_description }}<br>
-            Priority: {{ task.t_priority }}<br>
-            Deadline: {{ task.t_deadline }}<br>
-            Duration: {{ task.t_duration }} mins
-        </li>
-        <hr>
-        <a href="/dependency-graph">
-    <button style="padding: 8px 16px; background-color: #007BFF; color: white; border: none; border-radius: 4px; cursor: pointer;">
-        View Task Dependency Graph
-    </button>
-</a>
+            <div class="task">
+                <strong>{{ task.t_name }}</strong><br>
+                Description: {{ task.t_description }}<br>
+                Deadline: {{ task.t_deadline }} | Duration: {{ task.t_duration }} min<br>
+                Priority: {{ task.t_priority }}<br>
+
+                <div class="btn-group">
+                    <form method="post" action="/complete-task">
+                        <input type="hidden" name="t_id" value="{{ task.t_id }}">
+                        {% if task.t_status != "done" %}
+                            <button>✅ Done</button>
+                        {% else %}
+                            <span class="completed">Completed</span>
+                        {% endif %}
+                    </form>
+                    <form method="post" action="/delete-task">
+                        <input type="hidden" name="t_id" value="{{ task.t_id }}">
+                        <button style="background:red;">Delete</button>
+                    </form>
+
+                </div>
+            </div>
+            
+        {% else %}
+            <p>No tasks yet!</p>
         {% endfor %}
-    </ul>
+
+        <h2>Task Dependency Graph</h2>
+        <div id="cy" style="height: 400px; width: 100%; border: 1px solid #ccc; border-radius: 6px;"></div>
+    </div>
+
+    <script>
+    window.onload = () => {
+        document.getElementById('loader').style.display = 'none';
+        document.querySelector('.container').style.display = 'block';
+
+        // Animate progress bar width
+        const progressBar = document.querySelector('.progress-bar');
+
+        // Backend passes completed_percent, fallback to 0 if undefined
+        const completedPercent = {{ completed_percent | default(0) }};
+
+        // Small delay to trigger transition
+        setTimeout(() => {
+            progressBar.style.width = completedPercent + '%';
+        }, 100);
+
+        // Load graph data and initialize Cytoscape once
+        fetch("/graph-data")
+        .then(res => res.json())
+        .then(graphData => {
+            cytoscape({
+                container: document.getElementById('cy'),
+                elements: graphData.elements,
+                style: [
+                    {
+                        selector: 'node',
+                        style: {
+                            'label': 'data(name)',
+                            'text-wrap': 'wrap',
+                            'text-max-width': 80,
+                            'font-size': 10,
+                            'text-valign': 'center',
+                            'text-halign': 'center',
+                            'background-color': '#68a',
+                            'color': '#fff',
+                            'width': 60,
+                            'height': 60,
+                            'shape': 'ellipse',
+                            'overlay-padding': '6px',
+                            'z-index': 10
+                        }
+                    },
+                    {
+                        selector: 'edge',
+                        style: {
+                            'width': 2,
+                            'line-color': '#bbb',
+                            'target-arrow-color': '#bbb',
+                            'target-arrow-shape': 'triangle'
+                        }
+                    }
+                ],
+                layout: { name: 'cose' }
+            });
+        });
+    };
+    </script>
 </body>
 </html>
